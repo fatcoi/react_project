@@ -155,9 +155,51 @@
 
 ---
 
-### 步骤 3: 创建商品列表页
+### 步骤 3: 创建商品卡片组件 (`ProductCard`)
 
-现在我们可以创建一个页面来展示商品了。
+在创建列表页面之前，我们先遵循一个最佳实践：将重复的 UI 元素封装成独立的组件。商品卡片显然会在很多地方（首页、搜索页、推荐列表等）被复用。
+
+**为什么封装？**
+*   **复用性**: 一次编写，到处使用。
+*   **可维护性**: 修改卡片样式只需改动一个文件。
+*   **可读性**: 列表页的代码将变得更简洁，只关注布局和数据循环。
+
+1.  **创建 `src/components/ProductCard/index.tsx` 文件**:
+
+    ```tsx
+    // src/components/ProductCard/index.tsx
+    import { Link } from 'react-router-dom';
+    import { Card } from 'antd';
+    import type { Product } from '../../types/product';
+
+    const { Meta } = Card;
+
+    interface ProductCardProps {
+      product: Product;
+    }
+
+    const ProductCard = ({ product }: ProductCardProps) => {
+      return (
+        <Link to={`/product/${product.id}`}>
+          <Card
+            hoverable
+            cover={<img alt={product.name} src={product.imageUrl} style={{ height: 300, objectFit: 'cover' }} />}
+          >
+            <Meta title={product.name} description={`¥${product.price.toFixed(2)}`} />
+          </Card>
+        </Link>
+      );
+    };
+
+    export default ProductCard;
+    ```
+    这个组件是一个纯粹的“展示组件”，它只负责接收一个 `product` 对象（通过 props），并把它渲染成一个漂亮的卡片。
+
+---
+
+### 步骤 4: 创建商品列表页
+
+现在我们可以创建一个页面来展示商品了。这个页面将作为“容器组件”，负责获取数据和管理状态，然后将数据传递给“展示组件” `ProductCard`。
 
 1.  **创建 `ProductList` 页面 (`src/pages/ProductList/index.tsx`)**:
 
@@ -165,17 +207,16 @@
     // src/pages/ProductList/index.tsx
     import { useEffect } from 'react';
     import { useSelector, useDispatch } from 'react-redux';
-    import { Link } from 'react-router-dom';
-    import { List, Card, Spin, Alert, Typography } from 'antd';
+    import { List, Skeleton, Alert, Typography } from 'antd';
     import { AppDispatch, RootState } from '../../store';
     import { fetchProducts } from '../../store/slices/productSlice';
+    import ProductCard from '../../components/ProductCard'; // 导入我们刚刚创建的卡片组件
 
-    const { Meta } = Card;
     const { Title } = Typography;
 
     const ProductListPage = () => {
       const dispatch: AppDispatch = useDispatch();
-      const { items, status, error } = useSelector((state: RootState) => state.products);
+      const { item, statu, error } = useSelector((state: RootState) => state.products);
 
       useEffect(() => {
         // 只有在初始状态时才去获取数据，避免重复获取
@@ -187,7 +228,20 @@
       let content;
 
       if (status === 'loading') {
-        content = <div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" /></div>;
+        const skeletons = Array.from({ length: 8 }).map((_, index) => (
+          <List.Item key={index}>
+            <Skeleton.Node active style={{ width: '100%', height: '420px' }}>
+              <div />
+            </Skeleton.Node>
+          </List.Item>
+        ));
+        content = (
+          <List
+            grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4, xl: 4, xxl: 4 }}
+            dataSource={skeletons}
+            renderItem={(item) => item}
+          />
+        );
       } else if (status === 'succeeded') {
         content = (
           <List
@@ -195,14 +249,8 @@
             dataSource={items}
             renderItem={(product) => (
               <List.Item>
-                <Link to={`/product/${product.id}`}>
-                  <Card
-                    hoverable
-                    cover={<img alt={product.name} src={product.imageUrl} style={{ height: 300, objectFit: 'cover' }} />}
-                  >
-                    <Meta title={product.name} description={`¥${product.price.toFixed(2)}`} />
-                  </Card>
-                </Link>
+                {/* 在这里使用独立的卡片组件 */}
+                <ProductCard product={product} />
               </List.Item>
             )}
           />
@@ -224,7 +272,7 @@
 
 ---
 
-### 步骤 4: 更新路由
+### 步骤 5: 更新路由
 
 最后，将商品列表页和未来的详情页添加到路由表中。
 

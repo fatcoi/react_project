@@ -5,7 +5,8 @@ import type { RootState } from "../../store";
 const ProtectedRoute = () => {
     const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
     if (!isAuthenticated) {
-        return <Navigate to='/login' replace />;
+        console.log("用户未认证，重定向到登录页面");
+        return <Navigate to="/login" replace />;
     }
     else {
         return <Outlet />;

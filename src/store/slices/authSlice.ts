@@ -27,6 +27,7 @@ const authSlice = createSlice({
             state.token = action.payload.token;
             state.isAuthenticated = true;
             localStorage.setItem('token', action.payload.token);
+            console.log("用户已认证");
         },
         logout: (state) => {
             state.user = null;

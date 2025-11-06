@@ -1,0 +1,26 @@
+.container {
+    display: flex;
+    padding: 24px;
+    gap: 24px;
+    flex-direction: column;
+}
+
+.imageContainer,
+.infoContainer {
+    flex: 1;
+}
+
+.infoContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+
+@media (min-width: 768px) {
+    .container {
+        flex-direction: row;
+        gap: 40px;
+        padding: 40px;
+    }
+}
