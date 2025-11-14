@@ -4,13 +4,20 @@ import { Button, Image, Typography, Space } from 'antd';
 import type { Product } from "../../types/product";
 import type { RootState, AppDispatch } from '../../store';
 import styles from './ProductPage.module.css';
+import { useParams } from "react-router-dom";
 
-interface ProductPageProps {
-    product: Product;
-}
-
-const ProductPage = ({ product }: ProductPageProps) => {
+const ProductPage = () => {
     const dispatch: AppDispatch = useDispatch();
+
+    const { id } = useParams<{ id: string }>();
+
+    const product = useSelector((state: RootState) =>
+        state.products.products.find(p => p.id === id)
+    );
+
+    if (!product) {
+        return (<div>产品未找到</div>);
+    }
 
     const quantityInCart = useSelector((state: RootState) =>
         state.car.items.find(item => item.id === product.id)?.quantity ?? 0

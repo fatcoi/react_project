@@ -9,7 +9,7 @@ interface ProductCardProps {
 const ProductCard = (props: ProductCardProps) => {
     const { product } = props;
     return (
-        <Link to={`product/${product.id}`}>
+        <Link to={`${product.id}`}>
             <Card
                 hoverable
                 cover={<img alt={product.name} src={product.imageUrl} style={{ height: 300, objectFit: 'cover' }} />}
