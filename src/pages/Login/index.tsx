@@ -1,29 +1,22 @@
-import request from '../../utils/request';
-import { Form, Input, Button, message } from 'antd';
+import { Form, Input, Button, message} from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { useDispatch } from 'react-redux';
-import { loginSuccess } from '../../store/slices/authSlice.ts';
+import { login } from '../../store/slices/authSlice.ts';
 import { useNavigate, Link } from 'react-router-dom';
 import type { authForm } from '../../types/authForm';
-import type { User } from '../../types/user';
+import { useDispatch } from 'react-redux';
+import type { AppDispatch } from '../../store';
+import { useState } from 'react';
 
 
 
 const LoginPage = () => {
-
-
-    const dispatch = useDispatch();
+    const dispatch: AppDispatch = useDispatch();
     const navigate = useNavigate();
-
+    const [isLoading, setIsLoading] = useState(false);
     const onFinish = async (value: authForm) => {
+        setIsLoading(true);
         try {
-            const response = await request.post('/api/login',
-                {
-                    username: value.username,
-                    password: value.password
-                }
-            )
-            dispatch(loginSuccess({ user: response.data.user, token: response.data.token }));
+            await dispatch(login({ username: value.username, password: value.password })).unwrap();
             message.success('登录成功！即将跳转到首页...');
             navigate('/products');
             return;
@@ -32,16 +25,11 @@ const LoginPage = () => {
             message.error('登录失败，请检查用户名和密码！');
             return;
         }
-
+        finally {
+            setIsLoading(false);
+        }
     }
-    const initialUser: User = { username: 'user' };
 
-    const easyLogin = () => {
-        dispatch(loginSuccess({ user: initialUser, token: 'easylogin-token' }));
-        message.success('登录成功！即将跳转到首页...');
-        navigate('/products');
-        return;
-    }
 
 
     return (
@@ -56,10 +44,7 @@ const LoginPage = () => {
                         <Input prefix={<LockOutlined />} type='password' placeholder='密码' />
                     </Form.Item>
                     <Form.Item>
-                        <Button type='primary' htmlType='submit' style={{ width: '100%' }}>登录</Button>
-                    </Form.Item>
-                    <Form.Item>
-                        <Button onClick={easyLogin} style={{ width: '100%' }}>一键登录</Button>
+                        <Button type='primary' htmlType='submit' style={{ width: '100%' }} loading={isLoading}>登录</Button>
                     </Form.Item>
                     <Form.Item>
                         <Link to='/register'>没有账号？去注册</Link>

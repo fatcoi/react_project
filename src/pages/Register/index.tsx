@@ -10,7 +10,7 @@ const RegisterPage = () => {
 
     const onFinish = async (value: authForm) => {
         try {
-            await request.post('/api/register',
+            await request.post('/auth/register',
                 {
                     username: value.username,
                     password: value.password
@@ -20,8 +20,13 @@ const RegisterPage = () => {
             navigate('/login');
             return;
         }
-        catch (error) {
-            message.error('注册失败，请重试！');
+        catch (error:any) {
+            if(error.response&&error.response.state===409){
+                message.error('注册失败，用户名已存在！');
+            }
+            else{
+                message.error('注册失败，请稍后重试！');
+            }
             return;
         }
     }

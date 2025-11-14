@@ -1,9 +1,22 @@
 import axios from "axios";
 
 const request = axios.create({
-    baseURL: 'https://api.example.com',
+    baseURL: import.meta.env.VITE_API_BASE_URL,
     timeout: 5000,
 })
+
+request.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers!['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+)
 
 request.interceptors.response.use(
     (res) => {
@@ -25,6 +38,9 @@ request.interceptors.response.use(
             }
             else if (err.response.status === 500) {
                 console.log('Internal Server Error:', err.response.data);
+            }
+            else if (err.response.status === 409) {
+                console.log('Conflict:', err.response.data);
             }
         }
         else if (err.request) {

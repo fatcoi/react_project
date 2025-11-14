@@ -183,99 +183,201 @@
 
 ### 步骤 3: 创建购物车页面 (`CartPage`)
 
-这个页面将展示购物车中的所有商品，并允许用户管理它们。
+这个页面将展示购物车中的所有商品，并允许用户管理它们。我们采用现代电商常见的**“卡片列表 + 底部结算栏 + 管理模式切换”**布局：默认模式下只展示商品详情与数量调节；点击“管理商品”按钮后，所有卡片会条件渲染复选框和删除操作，让用户在同一视图内批量管理。
 
 1.  **创建 `src/pages/Cart/index.tsx` 文件**:
 
     ```tsx
     // src/pages/Cart/index.tsx
+    import { useMemo, useState } from 'react';
     import { useSelector, useDispatch } from 'react-redux';
     import { RootState, AppDispatch } from '../../store';
     import { removeFromCart, updateQuantity, clearCart } from '../../store/slices/cartSlice';
-    import { Table, Button, InputNumber, Typography, Empty, Space } from 'antd';
-    import type { ColumnsType } from 'antd/es/table';
-    import { CartItem } from '../../store/slices/cartSlice';
+    import { Button, InputNumber, Typography, Empty, Space, Card, message, Checkbox } from 'antd';
+    import { DeleteOutlined } from '@ant-design/icons';
 
     const { Title, Text } = Typography;
 
     const CartPage = () => {
       const dispatch: AppDispatch = useDispatch();
       const { items, totalPrice, totalQuantity } = useSelector((state: RootState) => state.cart);
+      const [isManaging, setIsManaging] = useState(false);
+      const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-      const handleRemove = (id: string) => {
+      const selectedCount = selectedIds.length;
+
+      const handleRemove = (id: string, name?: string) => {
         dispatch(removeFromCart(id));
+        if (name) {
+          message.success(`已将 "${name}" 从购物车移除`);
+        }
       };
 
       const handleQuantityChange = (id: string, quantity: number) => {
-        dispatch(updateQuantity({ id, quantity }));
+        if (quantity === 0) {
+          const item = items.find(i => i.id === id);
+          handleRemove(id, item?.name || '商品');
+        } else {
+          dispatch(updateQuantity({ id, quantity }));
+        }
       };
-      
+
+      const toggleManageMode = () => {
+        setIsManaging(prev => !prev);
+        setSelectedIds([]);
+      };
+
+      const toggleSelect = (id: string, checked: boolean) => {
+        setSelectedIds(prev => checked ? [...prev, id] : prev.filter(itemId => itemId !== id));
+      };
+
+      const handleRemoveSelected = () => {
+        if (selectedIds.length === 0) return;
+        selectedIds.forEach(id => {
+          const item = items.find(i => i.id === id);
+          handleRemove(id, item?.name);
+        });
+        message.success('已删除所选商品');
+        setSelectedIds([]);
+        setIsManaging(false);
+      };
+
       const handleClearCart = () => {
         dispatch(clearCart());
+        message.info('购物车已清空');
+        setSelectedIds([]);
+        setIsManaging(false);
       };
 
-      const columns: ColumnsType<CartItem> = [
-        {
-          title: '商品',
-          dataIndex: 'name',
-          key: 'name',
-          render: (_, record) => (
-            <Space>
-              <img src={record.imageUrl} alt={record.name} style={{ width: 50, height: 50, objectFit: 'cover' }} />
-              <Text>{record.name}</Text>
-            </Space>
-          ),
-        },
-        {
-          title: '单价',
-          dataIndex: 'price',
-          key: 'price',
-          render: (price) => `¥${price.toFixed(2)}`,
-        },
-        {
-          title: '数量',
-          dataIndex: 'quantity',
-          key: 'quantity',
-          render: (_, record) => (
-            <InputNumber
-              min={0}
-              value={record.quantity}
-              onChange={(value) => handleQuantityChange(record.id, value || 0)}
-            />
-          ),
-        },
-        {
-          title: '小计',
-          key: 'subtotal',
-          render: (_, record) => `¥${(record.price * record.quantity).toFixed(2)}`,
-        },
-        {
-          title: '操作',
-          key: 'action',
-          render: (_, record) => (
-            <Button type="link" danger onClick={() => handleRemove(record.id)}>
-              删除
-            </Button>
-          ),
-        },
-      ];
+      const totalSelectedPrice = useMemo(() => {
+        return selectedIds.reduce((sum, id) => {
+          const item = items.find(i => i.id === id);
+          return item ? sum + item.price * item.quantity : sum;
+        }, 0);
+      }, [items, selectedIds]);
 
       if (items.length === 0) {
-        return <div style={{ padding: '24px', textAlign: 'center' }}><Empty description="购物车是空的" /></div>;
+        return (
+          <div style={{ padding: '100px 0', textAlign: 'center' }}>
+            <Empty description={<Title level={4}>您的购物车还是空的</Title>}>
+              <Button type="primary" href="/products">马上去逛逛</Button>
+            </Empty>
+          </div>
+        );
       }
 
       return (
-        <div style={{ padding: '24px' }}>
-          <Title level={2}>我的购物车</Title>
-          <Table columns={columns} dataSource={items} rowKey="id" pagination={false} />
-          <div style={{ marginTop: '24px', textAlign: 'right' }}>
-            <Space direction="vertical" align="end">
-              <Title level={4}>总计: <Text type="danger">¥{totalPrice.toFixed(2)}</Text> ({totalQuantity} 件)</Title>
-              <Space>
-                <Button type="primary" size="large">去结算</Button>
-                <Button danger onClick={handleClearCart}>清空购物车</Button>
-              </Space>
-            </Space>
+        <div style={{ padding: '24px', paddingBottom: '120px' /* 为固定底栏留出空间 */ }}>
+          <Title level={2} style={{ marginBottom: '24px' }}>我的购物车</Title>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {items.map((item) => {
+              const checked = selectedIds.includes(item.id);
+              return (
+                <Card key={item.id} bodyStyle={{ padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                    {isManaging && (
+                      <Checkbox
+                        checked={checked}
+                        onChange={(e) => toggleSelect(item.id, e.target.checked)}
+                      />
+                    )}
+
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }}
+                    />
+
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <Title level={5} style={{ margin: 0 }}>{item.name}</Title>
+                      <Text type="secondary">单价: ¥{item.price.toFixed(2)}</Text>
+                      <Text type="secondary">小计: ¥{(item.price * item.quantity).toFixed(2)}</Text>
+                    </div>
+
+                    {!isManaging && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Text type="secondary">数量</Text>
+                        <InputNumber
+                          min={0}
+                          value={item.quantity}
+                          onChange={(value) => handleQuantityChange(item.id, value || 0)}
+                          style={{ width: '100px' }}
+                        />
+                      </div>
+                    )}
+
+                    {isManaging && (
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleRemove(item.id, item.name)}
+                      >
+                        删除
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: '#fff',
+              boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.1)',
+              zIndex: 10,
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: '100%',
+                maxWidth: 1200,
+                padding: '16px 24px',
+              }}
+            >
+              <div>
+                <Space align="baseline">
+                  <Title level={4} style={{ margin: 0 }}>
+                    总计: <Text type="danger">¥{totalPrice.toFixed(2)}</Text>
+                  </Title>
+                  <Text type="secondary">({totalQuantity} 件)</Text>
+                </Space>
+                {isManaging && selectedCount > 0 && (
+                  <Text type="secondary">已选 {selectedCount} 件，合计 ¥{totalSelectedPrice.toFixed(2)}</Text>
+                )}
+              </div>
+              <div>
+                <Space>
+                  {isManaging ? (
+                    <>
+                      <Button onClick={toggleManageMode}>取消管理</Button>
+                      <Button danger disabled={selectedCount === 0} onClick={handleRemoveSelected}>
+                        删除所选
+                      </Button>
+                      <Button danger type="link" onClick={handleClearCart}>
+                        清空全部
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button onClick={toggleManageMode}>管理商品</Button>
+                      <Button type="primary" size="large">去结算</Button>
+                    </>
+                  )}
+                </Space>
+              </div>
+            </div>
           </div>
         </div>
       );

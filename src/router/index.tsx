@@ -7,6 +7,7 @@ import RegisterPage from '../pages/Register';
 import ProtectedRoute from '../components/ProtectedRoute';
 import ProductListPage from '../pages/ProductListPage';
 import ProductPage from '../pages/ProductPage';
+import CarPage from '../pages/Cart';
 
 const router = createBrowserRouter([
     {
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
                     {
                         path: 'products/:id',
                         element: <ProductPage />
+                    },
+                    {
+                        path: 'cart',
+                        element: <CarPage />
                     }
                 ]
             }

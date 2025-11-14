@@ -1,71 +1,132 @@
-import { useDispatch, useSelector } from "react-redux";
-import { addToCar, minusFromCar } from "../../store/slices/carSlice";
-import { Button, Image, Typography, Space } from 'antd';
-import type { Product } from "../../types/product";
-import type { RootState, AppDispatch } from '../../store';
+import { useDispatch} from "react-redux";
+import { setQuantity } from "../../store/slices/cartSlice";
+import { Button, Carousel, Typography, Space, Image,Modal,message } from 'antd';
+import { useEffect, useState } from "react";
+import request from "../../utils/request";
+import type { ProductInfo } from "../../types/productinfo";
+import type {AppDispatch } from '../../store';
 import styles from './ProductPage.module.css';
 import { useParams } from "react-router-dom";
 
+
 const ProductPage = () => {
     const dispatch: AppDispatch = useDispatch();
-
     const { id } = useParams<{ id: string }>();
 
-    const product = useSelector((state: RootState) =>
-        state.products.products.find(p => p.id === id)
-    );
+    const [status, setStatus] = useState<'idle' | 'succeeded' | 'failed'>('idle');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [cartQuantity, setCartQuantity] = useState(1);
 
-    if (!product) {
-        return (<div>产品未找到</div>);
+    const handleIncrease = ()=>{
+        setCartQuantity(q=>q+1);
     }
 
-    const quantityInCart = useSelector((state: RootState) =>
-        state.car.items.find(item => item.id === product.id)?.quantity ?? 0
-    );
-
-    const handleAddToCar = (product: Product) => {
-        dispatch(addToCar(product));
-    }
-    const handleMinusFromCar = (product: Product) => {
-        dispatch(minusFromCar(product));
+    const handleDecrease = ()=>{
+        setCartQuantity(q=>q-1);
     }
 
-    return (
-        <div className={styles.container}>
-            <div className={styles.imageContainer}>
-                <Image
-                    width="100%"
-                    src={product.imageUrl}
-                    alt={product.name}
-                />
+    const [productIfo, setProductIfo] = useState<ProductInfo>({
+        id: '',
+        name: '',
+        price: 0,
+        category: '',
+        description: '',
+        stock: 0,
+        images: [],
+    });
+
+    useEffect(() => {
+        if (!id) {
+            setStatus('failed');
+            return;
+        }
+        const fetchProduct = async () => {
+            try {
+                const response = await request.get<ProductInfo>(`/products/${id}`);
+                setProductIfo(response.data);
+                setStatus('succeeded');
+                return response.data;
+            }
+            catch (error) {
+                setStatus('failed');
+                return null;
+            }
+        }
+        fetchProduct();
+    }, [dispatch, id])
+    const handleSetQuantity = async (newQuantity: number) => {
+        try{
+            await dispatch(setQuantity({ id: productIfo.id, quantity: newQuantity })).unwrap();
+            message.success('已成功加入购物车');
+        }
+        catch(error){
+            message.error('加入购物车失败，请稍后重试');
+        }
+    }
+
+    if (status === 'failed')
+        return <div>Failed to fetch product information.</div>;
+
+    if (status === 'succeeded') {
+        return (
+            <div>
+                <div className={styles.container}>
+                    <div className={styles.imageContainer}>
+                        <Carousel autoplay>
+                            {productIfo.images.map((imageUrl, index) => (
+                                <div key={index}>
+                                    <Image
+                                        width="100%"
+                                        src={imageUrl}
+                                        alt={productIfo.name}
+                                    />
+                                </div>
+                            ))}
+                        </Carousel>
+                    </div>
+                    <div className={styles.infoContainer}>
+                        <Typography.Title level={2}>{productIfo.name}</Typography.Title>
+                        <Typography.Title level={3} style={{ color: 'red' }}>
+                            ¥{productIfo.price.toFixed(2)}
+                        </Typography.Title>
+                        <Typography.Paragraph>{productIfo.description}</Typography.Paragraph>
+                        <Space direction="vertical" size="large">
+                            <Button type="primary" size="large" onClick={() => setModalOpen(true)}>
+                                加入购物车
+                            </Button>
+                        </Space>
+                    </div>
+                </div>
+                <Modal
+                    title='选择购买数量'
+                    open={modalOpen}
+                    onCancel={() => setModalOpen(false)}
+                    footer={null}
+                    centered
+                >
+                    <div style = {{display:'flex',flexDirection:'column',alignItems:'center'}}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Button onClick={handleDecrease} disabled={cartQuantity === 1}>
+                                -
+                            </Button>
+                            <span style={{ margin: '0 16px', fontSize: '16px' }}>{cartQuantity}</span>
+                            <Button onClick={handleIncrease} disabled={productIfo.stock === cartQuantity}>
+                                +
+                            </Button>
+                        </div>
+                        <Button type="primary" style={{ marginTop: '16px' }} onClick={() => {
+                            handleSetQuantity(cartQuantity);
+                            setModalOpen(false);
+                            setCartQuantity(1);
+                        }}>
+                            加入购物车
+                        </Button>
+                    </div>
+
+                </Modal>
             </div>
-            <div className={styles.infoContainer}>
-                <Typography.Title level={2}>{product.name}</Typography.Title>
-
-                <Typography.Paragraph style={{ fontSize: '16px', color: '#666' }}>
-                    {product.description}
-                </Typography.Paragraph>
-
-                <Typography.Title level={3} style={{ color: 'red' }}>
-                    ¥{product.price.toFixed(2)}
-                </Typography.Title>
-
-                <Space direction="vertical" size="large">
-                    <Typography.Text>数量</Typography.Text>
-                    <Space>
-                        <Button onClick={() => handleMinusFromCar(product)} disabled={quantityInCart === 0}>-</Button>
-                        <span style={{ fontSize: '18px', margin: '0 16px', minWidth: '30px', textAlign: 'center' }}>
-                            {quantityInCart}
-                        </span>
-                        <Button onClick={() => handleAddToCar(product)}>+</Button>
-                    </Space>
-                    <Button type="primary" size="large" onClick={() => handleAddToCar(product)}>
-                        加入购物车
-                    </Button>
-                </Space>
-            </div>
-        </div>
-    )
+        )
+    }
 }
 
 export default ProductPage;
