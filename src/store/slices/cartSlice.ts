@@ -42,10 +42,10 @@ export const removeFromCart = createAsyncThunk(
     }
 )
 
-export const setQuantity = createAsyncThunk(
-    'cart/setQuantity',
+export const addQuantity = createAsyncThunk(
+    'cart/addQuantity',
     async ({ id, quantity }: { id: string, quantity: number }) => {
-        const response = await request.post<CartItem>('cart/setQuantity', { id, quantity })
+        const response = await request.post<CartItem>('cart/addQuantity', { id, quantity })
         return response.data;
     }
 );
@@ -103,7 +103,7 @@ const cartSlice = createSlice({
                 state.totalPrice = 0;
                 state.totalQuantity = 0;
             })
-            .addCase(setQuantity.fulfilled, (state, action: PayloadAction<CartItem>) => {
+            .addCase(addQuantity.fulfilled, (state, action: PayloadAction<CartItem>) => {
                 const existingItem = state.items.find(item => item.id === action.payload.id);
                 if (existingItem) {
                     const quantityDifference = action.payload.quantity - existingItem.quantity;

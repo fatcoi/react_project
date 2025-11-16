@@ -1,5 +1,5 @@
 import { useDispatch} from "react-redux";
-import { setQuantity } from "../../store/slices/cartSlice";
+import { addQuantity } from "../../store/slices/cartSlice";
 import { Button, Carousel, Typography, Space, Image,Modal,message } from 'antd';
 import { useEffect, useState } from "react";
 import request from "../../utils/request";
@@ -54,9 +54,9 @@ const ProductPage = () => {
         }
         fetchProduct();
     }, [dispatch, id])
-    const handleSetQuantity = async (newQuantity: number) => {
+    const handleAddQuantity = async (newQuantity: number) => {
         try{
-            await dispatch(setQuantity({ id: productIfo.id, quantity: newQuantity })).unwrap();
+            await dispatch(addQuantity({ id: productIfo.id, quantity: newQuantity })).unwrap();
             message.success('已成功加入购物车');
         }
         catch(error){
@@ -115,7 +115,7 @@ const ProductPage = () => {
                             </Button>
                         </div>
                         <Button type="primary" style={{ marginTop: '16px' }} onClick={() => {
-                            handleSetQuantity(cartQuantity);
+                            handleAddQuantity(cartQuantity);
                             setModalOpen(false);
                             setCartQuantity(1);
                         }}>

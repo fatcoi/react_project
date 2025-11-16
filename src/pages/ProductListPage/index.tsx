@@ -1,15 +1,51 @@
 import { firstPageProducts,lastPageProducts,nextPageProducts,prevPageProducts } from '../../store/slices/productSlice';
-import { List, Alert, Typography, Button, } from 'antd';
+import { setSearchKeyword } from '../../store/slices/productSlice';
+import { List, Alert, Typography, Button,AutoComplete,Input } from 'antd';
 import ProductCard from '../../components/ProductCard';
-import { useEffect } from 'react';
+import { useCallback, useEffect,useState} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../../store';
 import Skeletons from '../../components/Skeletons';
+import { debounce } from '../../utils/debounce';
+import request from '../../utils/request';
+import type { Product } from '../../types/product';
 
+interface QuickSearchResult {
+    products:Product[];
+}
 const ProductListPage = () => {
     const dispatch: AppDispatch = useDispatch();
     const { currentPage, totalPages } = useSelector((state: RootState) => state.products);
     const { products, status, error } = useSelector((state: RootState) => state.products);
+    const[input,setInput]=useState('');
+    const [quickSearchResults, setQuickSearchResults] = useState<Product[]>([]);
+
+    const handleSearch=(value?:string)=>{
+        const keyword = value !== undefined ? value : input;
+        setInput(keyword);
+        dispatch(setSearchKeyword(keyword));
+        dispatch(firstPageProducts());
+    }
+    const quickSearch = async(value:string) => {
+        try{
+            const response = await request.get<QuickSearchResult>('/products/quicksearch', {
+                params: { keyword: value }
+            });
+            setQuickSearchResults(response.data.products);
+
+        }catch{
+            console.log('快速搜索失败');
+        }
+    }
+    const debouncedQuickSearch = useCallback(debounce((value:string)=>{
+        quickSearch(value);
+    },300),[]);
+
+    const handleOnChange= (value:string)=>{
+        setInput(value);
+        debouncedQuickSearch(value);
+    };
+    
     useEffect(() => {
         if (status === 'idle'&&products.length===0) {
             dispatch(firstPageProducts());
@@ -45,6 +81,16 @@ const ProductListPage = () => {
     return (
         <div style={{ padding: '24px' }}>
             <Typography.Title level={2}>产品列表</Typography.Title>
+            <AutoComplete
+                style={{ width: 300, marginBottom: '100px' }}
+                options={quickSearchResults.map(product=>({value:product.name}))}
+                onSelect={(value)=>{handleSearch(value)}}
+                onChange={handleOnChange}
+                value={input}
+            >
+                <Input.Search size="large" enterButton="搜索" onSearch={handleSearch}/>
+            </AutoComplete>
+
             {context}
             <div style={{ marginBottom: '16px' }}>
                 <Button onClick={()=>dispatch(firstPageProducts())}>首页</Button>

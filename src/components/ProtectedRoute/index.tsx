@@ -1,20 +1,49 @@
 import { useSelector } from "react-redux";
 import { Navigate, Outlet, Link } from "react-router-dom";
-import {Menu,Badge} from 'antd';
-import { ShoppingCartOutlined } from '@ant-design/icons';
+import {Menu,Badge,message} from 'antd';
+import { ShoppingCartOutlined,HomeOutlined } from '@ant-design/icons';
 import {logout} from '../../store/slices/authSlice';
+import { useDispatch } from "react-redux";
+import type{ AppDispatch } from "../../store";
+import { useEffect } from "react";
+import { setSearchKeyword } from "../../store/slices/productSlice";
+import { firstPageProducts } from "../../store/slices/productSlice";
 
 import type { RootState } from "../../store";
 
 const ProtectedRoute = () => {
     const username = useSelector((state: RootState) => state.auth.user?.username);
-    const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
     const cartQuantity = useSelector((state: RootState) => state.cart.totalQuantity);
+    const dispatch:AppDispatch = useDispatch();
+
+    const handleGoProductList = ()=>{
+        dispatch(setSearchKeyword(''));
+        dispatch(firstPageProducts());
+    }
+    const handleLougout = () => {
+        dispatch(logout());
+    }
+    const token = localStorage.getItem('token');
+    useEffect(()=>{
+        if(!token){
+            message.warning('请先登录！');
+        }
+    },[token])
+
+    useEffect(()=>{
+        const handlePageShow = (e: PageTransitionEvent) => {
+            if(e.persisted){
+                window.location.reload();
+            }
+        }
+        window.addEventListener('pageshow',handlePageShow);
+        return ()=>window.removeEventListener('pageshow',handlePageShow);
+    },[])
 
     const items = [
         {
             key: 'products',
-            label: <Link to="/products">产品列表</Link>,
+            label: <span onClick={handleGoProductList}><Link to="/products"><HomeOutlined style={{fontSize:'18px',marginRight:4}}/></Link></span>,
         },
         {
             key: 'cart',
@@ -33,21 +62,22 @@ const ProtectedRoute = () => {
         },
         {
             key: 'logout',
-            label: <Link to="/login" onClick={() => logout()}>退出登录</Link>,
+            label: <Link to="/login" onClick={() => handleLougout()}>退出登录</Link>,
         }
-    ];
-
-    if (!isAuthenticated) {
-        console.log("用户未认证，重定向到登录页面");
-        return <Navigate to="/login" replace />;
-    }
-    else {
-        return (
-            <div>
-                <Menu mode='horizontal' theme='light' items={items}/>
-                <Outlet />
-            </div>
-        )
-    }
+    ]
+    if (token)return (
+        <div>
+            <Menu mode='horizontal' theme='light' items={items}/>
+            <Outlet />
+        </div>
+    )
+    else return (
+        <div>
+            <Navigate to="/login" replace />
+        </div>
+        
+    )
 }
+
+
 export default ProtectedRoute;

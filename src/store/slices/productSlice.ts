@@ -16,6 +16,7 @@ interface productState {
     currentPage: number;
     totalPages: number;
     limit:number;
+    keyword:string;
 }
 
 const initialState: productState = {
@@ -24,7 +25,8 @@ const initialState: productState = {
     error: null,
     currentPage: 1,
     totalPages: 1,
-    limit:8
+    limit:8,
+    keyword:'',
 }
 
 export const firstPageProducts = createAsyncThunk(
@@ -34,7 +36,8 @@ export const firstPageProducts = createAsyncThunk(
         const response = await request.get<ProductResponse>('/products', {
             params: {
                 page: 1,
-                limit: state.products.limit
+                limit: state.products.limit,
+                keyword: state.products.keyword
             }
         });
         return response.data;
@@ -50,7 +53,8 @@ export const nextPageProducts = createAsyncThunk(
         const response = await request.get<ProductResponse>('/products', {
             params: {
                 page: nextPage,
-                limit: state.products.limit
+                limit: state.products.limit,
+                keyword: state.products.keyword
             }
         });
         return response.data;
@@ -66,7 +70,8 @@ export const prevPageProducts = createAsyncThunk(
         const response = await request.get<ProductResponse>('/products', {
             params: {
                 page: prevPage,
-                limit: state.products.limit
+                limit: state.products.limit,
+                keyword: state.products.keyword
             }
         });
         return response.data;
@@ -81,7 +86,8 @@ export const lastPageProducts = createAsyncThunk(
         const response = await request.get<ProductResponse>('/products', {
             params: {
                 page: lastPage,
-                limit: state.products.limit
+                limit: state.products.limit,
+                keyword: state.products.keyword
             }
         });
         return response.data;
@@ -91,7 +97,11 @@ export const lastPageProducts = createAsyncThunk(
 const productSlice = createSlice({
     name: 'products',
     initialState: initialState,
-    reducers: {},
+    reducers: {
+        setSearchKeyword(state,action){
+            state.keyword=action.payload;
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(firstPageProducts.pending, (state) => {
@@ -150,3 +160,4 @@ const productSlice = createSlice({
 
 
 export default productSlice.reducer;
+export const {setSearchKeyword}=productSlice.actions;

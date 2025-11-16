@@ -1,13 +1,22 @@
 import { createBrowserRouter } from 'react-router-dom';
 import App from '../App';
-import HomePage from '../pages/Home';
 import ErrorPage from '../pages/ErrorPage';
-import LoginPage from '../pages/Login';
-import RegisterPage from '../pages/Register';
 import ProtectedRoute from '../components/ProtectedRoute';
-import ProductListPage from '../pages/ProductListPage';
-import ProductPage from '../pages/ProductPage';
-import CarPage from '../pages/Cart';
+import{lazy,Suspense} from 'react';
+
+const HomePage = lazy(()=>import('../pages/Home'));
+const LoginPage = lazy(()=>import('../pages/Login'));
+const RegisterPage = lazy(()=>import('../pages/Register'));
+const ProductListPage = lazy(()=>import('../pages/ProductListPage'));
+const ProductPage = lazy(()=>import('../pages/ProductPage'));
+const CarPage = lazy(()=>import('../pages/Cart'));
+
+const withSuspense = (element:JSX.Element, fallback:JSX.Element=<div>加载中...</div>)=>(
+    <Suspense fallback={fallback}>
+        {element}
+    </Suspense>
+);
+
 
 const router = createBrowserRouter([
     {
@@ -17,30 +26,30 @@ const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <HomePage />,
+                element: withSuspense(<HomePage />),
             },
             {
                 path: 'login',
-                element: <LoginPage />
+                element: withSuspense(<LoginPage />)
             },
             {
                 path: 'register',
-                element: <RegisterPage />
+                element: withSuspense(<RegisterPage />)
             },
             {
                 element: <ProtectedRoute />,
                 children: [
                     {
                         path: 'products',
-                        element: <ProductListPage />
+                        element: withSuspense(<ProductListPage />)
                     },
                     {
                         path: 'products/:id',
-                        element: <ProductPage />
+                        element: withSuspense(<ProductPage />)
                     },
                     {
                         path: 'cart',
-                        element: <CarPage />
+                        element: withSuspense(<CarPage />)
                     }
                 ]
             }
