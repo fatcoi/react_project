@@ -1,17 +1,23 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useState} from 'react';
-import { addToCart, minusFromCart, removeFromCart} from '../../store/slices/cartSlice';
-import { Button, Image, Typography} from 'antd';
+import { useState, useEffect } from 'react';
+import { addToCart, minusFromCart, removeFromCart, fetchCart } from '../../store/slices/cartSlice';
+import { Button, Image, Typography } from 'antd';
 import type { CartItem } from '../../types/cartType';
 import type { RootState } from '../../store';
-import type{ AppDispatch } from '../../store';
+import type { AppDispatch } from '../../store';
+import { useLocation } from 'react-router-dom';
 
 const CarPage = () => {
-    const dispatch:AppDispatch = useDispatch();
+    const dispatch: AppDispatch = useDispatch();
     const { items, totalPrice, totalQuantity } = useSelector((state: RootState) => state.cart);
     const [isManagementMode, setManagementMode] = useState(false);
     const [selectedId, setSelectedId] = useState<string[]>([]);
     const selectedCount = selectedId.length;
+    const location = useLocation();
+
+    useEffect(() => {
+        dispatch(fetchCart());
+    }, [dispatch, location.pathname]);
 
     const handleSelectItem = (product: CartItem, check: boolean) => {
         if (check) {
@@ -53,17 +59,17 @@ const CarPage = () => {
         dispatch(minusFromCart(product.id));
     }
 
-    if(items.length===0) return(
+    if (items.length === 0) return (
         <div>
-            <Typography.Title level={2} style={{textAlign:'center',marginTop:'50px'}}>购物车为空</Typography.Title>
-             赶紧去选购喜欢的商品吧！
+            <Typography.Title level={2} style={{ textAlign: 'center', marginTop: '50px' }}>购物车为空</Typography.Title>
+            赶紧去选购喜欢的商品吧！
         </div>
     )
     return (
-        < div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px' ,gap:'12px' ,position:'relative'}}>
+        <div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px', gap: '12px', position: 'relative' }}>
                 <Typography.Title level={2}>购物车</Typography.Title>
-                <Button onClick={handleSwitchMode} style={{position:'absolute',top:0,right:0,zIndex:1}}>{isManagementMode ? '完成' : '管理'}</Button>
+                <Button onClick={handleSwitchMode} style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}>{isManagementMode ? '完成' : '管理'}</Button>
                 {items.map((cartItem) => (
                     <div style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '12px', borderBottom: '1px solid #f0f0f0' }} key={cartItem.id}>
                         {isManagementMode && (
@@ -74,15 +80,15 @@ const CarPage = () => {
                                 style={{ marginRight: '16px' }}
                             />
                         )}
-                        <Image src={cartItem.imageUrl} alt={cartItem.name} style={{ marginRight: '16px' ,maxWidth:100,maxHeight:100,flex:1,objectFit:'contain'}} />
-                        <div style={{ flex: 5 ,display:'flex',flexDirection:'column',alignItems:'center'}}>
+                        <Image src={cartItem.imageUrl} alt={cartItem.name} style={{ marginRight: '16px', maxWidth: 100, maxHeight: 100, flex: 1, objectFit: 'contain' }} />
+                        <div style={{ flex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Typography.Text strong>{cartItem.name}</Typography.Text>
                             <br />
-                            <Typography.Text>价格: ¥{cartItem.price*cartItem.quantity}</Typography.Text>
+                            <Typography.Text>价格: ¥{cartItem.price * cartItem.quantity}</Typography.Text>
                             <br />
                             <Typography.Text>数量: {cartItem.quantity}</Typography.Text>
                         </div>
-                            {!isManagementMode&&(<div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            {!isManagementMode && (<div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                 <Button onClick={() => handleAdd(cartItem)} style={{ marginBottom: '8px' }}>+</Button>
                                 <Button onClick={() => handleMinus(cartItem)} style={{ marginBottom: '8px' }} disabled={cartItem.quantity <= 1}>-</Button>
                             </div>)}
@@ -98,7 +104,7 @@ const CarPage = () => {
                             <Button onClick={handleSelectAll} style={{ marginTop: '8px' }}>{selectedCount === items.length ? '取消全选' : '全选'}</Button>
                         )}
                         {isManagementMode && (
-                            <Button onClick = {removeSelectedItems} disabled={selectedCount===0} style={{ marginTop: '8px' ,marginRight:'8px'}}>删除({selectedCount})</Button>
+                            <Button onClick={removeSelectedItems} disabled={selectedCount === 0} style={{ marginTop: '8px', marginRight: '8px' }}>删除({selectedCount})</Button>
                         )}
                     </div>
                 </div>

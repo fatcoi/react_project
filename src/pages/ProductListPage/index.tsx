@@ -1,6 +1,6 @@
 import { firstPageProducts,lastPageProducts,nextPageProducts,prevPageProducts, appendNextPageProducts} from '../../store/slices/productSlice';
 import { setSearchKeyword } from '../../store/slices/productSlice';
-import { List, Alert, Typography, Button,AutoComplete,Input } from 'antd';
+import { List, Typography, Button,AutoComplete,Input } from 'antd';
 import ProductCard from '../../components/ProductCard';
 import { useCallback, useEffect,useState} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -12,6 +12,7 @@ import type { Product } from '../../types/product';
 import { FixedSizeList} from 'react-window';
 import {throttle} from"../../utils/throttle";
 import type{ CSSProperties } from 'react';
+import {useLocation} from 'react-router-dom';
 
 
 interface QuickSearchResult {
@@ -24,6 +25,7 @@ const ProductListPage = () => {
     const[input,setInput]=useState('');
     const [quickSearchResults, setQuickSearchResults] = useState<Product[]>([]);
     const [isPC, setIsPC] = useState(window.innerWidth >= 1024);
+    const location = useLocation();
 
     const throttledResize = useCallback(throttle(() => {
         setIsPC(window.innerWidth >= 1024);
@@ -62,10 +64,8 @@ const ProductListPage = () => {
     };
     
     useEffect(() => {
-        if (status === 'idle'&&products.length===0) {
-            dispatch(firstPageProducts());
-        }
-    }, [dispatch, status, products.length]);
+        dispatch(firstPageProducts());
+    }, [location.pathname]);
 
     let context;
 
@@ -93,7 +93,7 @@ const ProductListPage = () => {
         context=<FixedSizeList
         height={600}
         width={'100%'}
-        itemSize={150}
+        itemSize={420}
         itemCount={8}
         >
             {({style}:{index:number;style:CSSProperties})=>(

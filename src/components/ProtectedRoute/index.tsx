@@ -6,8 +6,6 @@ import {logout} from '../../store/slices/authSlice';
 import { useDispatch } from "react-redux";
 import type{ AppDispatch } from "../../store";
 import { useEffect } from "react";
-import { setSearchKeyword } from "../../store/slices/productSlice";
-import { firstPageProducts } from "../../store/slices/productSlice";
 
 import type { RootState } from "../../store";
 
@@ -15,11 +13,6 @@ const ProtectedRoute = () => {
     const username = useSelector((state: RootState) => state.auth.user?.username);
     const cartQuantity = useSelector((state: RootState) => state.cart.totalQuantity);
     const dispatch:AppDispatch = useDispatch();
-
-    const handleGoProductList = ()=>{
-        dispatch(setSearchKeyword(''));
-        dispatch(firstPageProducts());
-    }
     const handleLougout = () => {
         dispatch(logout());
     }
@@ -43,7 +36,7 @@ const ProtectedRoute = () => {
     const items = [
         {
             key: 'products',
-            label: <span onClick={handleGoProductList}><Link to="/products"><HomeOutlined style={{fontSize:'18px',marginRight:4}}/></Link></span>,
+            label: <Link to="/products"><HomeOutlined style={{fontSize:'18px',marginRight:4}}/></Link>,
         },
         {
             key: 'cart',
