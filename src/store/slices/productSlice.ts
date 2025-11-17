@@ -29,6 +29,22 @@ const initialState: productState = {
     keyword:'',
 }
 
+export const appendNextPageProducts = createAsyncThunk(
+    'products/appendNextPageProducts',
+    async (_, { getState }) => {
+        const state = getState() as RootState;
+        const nextPage = state.products.currentPage + 1;
+        const response = await request.get<ProductResponse>('/products', {
+            params: {
+                page: nextPage,
+                limit: state.products.limit,
+                keyword: state.products.keyword
+            }
+        });
+        return response.data;
+    }
+)
+
 export const firstPageProducts = createAsyncThunk(
     'products/fetchProducts',
     async (_,{getState}) => {
@@ -100,7 +116,7 @@ const productSlice = createSlice({
     reducers: {
         setSearchKeyword(state,action){
             state.keyword=action.payload;
-        }
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -116,6 +132,12 @@ const productSlice = createSlice({
             .addCase(firstPageProducts.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message || 'Failed to fetch products';
+            })
+            .addCase(appendNextPageProducts.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.products = state.products.concat(action.payload.products);
+                state.currentPage = action.payload.currentPage;
+                state.totalPages = action.payload.totalPages;
             })
             .addCase(nextPageProducts.fulfilled, (state, action) => {
                 state.status = 'succeeded';
@@ -146,6 +168,10 @@ const productSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.error.message || 'Failed to fetch products';
             })
+            .addCase(appendNextPageProducts.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || 'Failed to fetch products';
+            })
             .addCase(lastPageProducts.pending, (state) => {
                 state.status = 'loading';
             })
@@ -153,6 +179,9 @@ const productSlice = createSlice({
                 state.status = 'loading';
             })
             .addCase(prevPageProducts.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(appendNextPageProducts.pending, (state) => {
                 state.status = 'loading';
             })
     }
